@@ -1,0 +1,502 @@
+{
+  "name": "Telegram Message Handler Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300],
+      "webhookId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram Bot API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1",
+              "name": "chat_id",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "number"
+            },
+            {
+              "id": "2",
+              "name": "username",
+              "value": "={{ $json.message.from.username || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "3",
+              "name": "first_name",
+              "value": "={{ $json.message.from.first_name || 'Unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "4",
+              "name": "last_name",
+              "value": "={{ $json.message.from.last_name || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "5",
+              "name": "message_text",
+              "value": "={{ $json.message.text || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "6",
+              "name": "message_id",
+              "value": "={{ $json.message.message_id }}",
+              "type": "number"
+            },
+            {
+              "id": "7",
+              "name": "telegram_user_id",
+              "value": "={{ String($json.message.from.id) }}",
+              "type": "string"
+            },
+            {
+              "id": "8",
+              "name": "synthetic_email",
+              "value": "={{ 'telegram_' + $json.message.from.id + '@noreply.telegram' }}",
+              "type": "string"
+            },
+            {
+              "id": "9",
+              "name": "timestamp_iso",
+              "value": "={{ new Date($json.message.date * 1000).toISOString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOthers": false,
+        "options": {}
+      },
+      "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "name": "Extract Message Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ filterGroups: [{ filters: [{ propertyName: 'email', operator: 'EQ', value: $json.synthetic_email }] }], properties: ['firstname', 'lastname', 'email'], limit: 1 }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+      "name": "Search HubSpot Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "HubSpot API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-1",
+              "leftValue": "={{ $json.total }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d4e5f6a7-b8c9-0123-defa-234567890123",
+      "name": "Contact Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [960, 300]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "10",
+              "name": "contact_id",
+              "value": "={{ $json.results[0].id }}",
+              "type": "string"
+            },
+            {
+              "id": "11",
+              "name": "chat_id",
+              "value": "={{ $('Extract Message Data').item.json.chat_id }}",
+              "type": "number"
+            },
+            {
+              "id": "12",
+              "name": "message_text",
+              "value": "={{ $('Extract Message Data').item.json.message_text }}",
+              "type": "string"
+            },
+            {
+              "id": "13",
+              "name": "first_name",
+              "value": "={{ $('Extract Message Data').item.json.first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "14",
+              "name": "timestamp_iso",
+              "value": "={{ $('Extract Message Data').item.json.timestamp_iso }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOthers": false,
+        "options": {}
+      },
+      "id": "e5f6a7b8-c9d0-1234-efab-345678901234",
+      "name": "Get Existing Contact ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1200, 160]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/contacts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ properties: { email: $('Extract Message Data').item.json.synthetic_email, firstname: $('Extract Message Data').item.json.first_name, lastname: $('Extract Message Data').item.json.last_name, phone: $('Extract Message Data').item.json.telegram_user_id, hs_lead_status: 'NEW' } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "f6a7b8c9-d0e1-2345-fabc-456789012345",
+      "name": "Create HubSpot Contact",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 440],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "HubSpot API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "15",
+              "name": "contact_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "16",
+              "name": "chat_id",
+              "value": "={{ $('Extract Message Data').item.json.chat_id }}",
+              "type": "number"
+            },
+            {
+              "id": "17",
+              "name": "message_text",
+              "value": "={{ $('Extract Message Data').item.json.message_text }}",
+              "type": "string"
+            },
+            {
+              "id": "18",
+              "name": "first_name",
+              "value": "={{ $('Extract Message Data').item.json.first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "19",
+              "name": "timestamp_iso",
+              "value": "={{ $('Extract Message Data').item.json.timestamp_iso }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOthers": false,
+        "options": {}
+      },
+      "id": "a7b8c9d0-e1f2-3456-abcd-567890123456",
+      "name": "Set New Contact ID",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1440, 440]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "b8c9d0e1-f2a3-4567-bcde-678901234567",
+      "name": "Merge Contact",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/notes",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ properties: { hs_note_body: '[INBOUND via Telegram] ' + $json.message_text, hs_timestamp: String(new Date().getTime()) }, associations: [{ to: { id: $json.contact_id }, types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 202 }] }] }) }}",
+        "options": {}
+      },
+      "id": "c9d0e1f2-a3b4-5678-cdef-789012345678",
+      "name": "Log Inbound Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1920, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "HubSpot API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1024, system: 'You are a concise, friendly customer support assistant. Draft a helpful reply to the user message in 2-3 sentences. Be warm and professional.', messages: [{ role: 'user', content: $('Merge Contact').item.json.message_text }] }) }}",
+        "options": {}
+      },
+      "id": "d0e1f2a3-b4c5-6789-defa-890123456789",
+      "name": "Draft Reply with Claude",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2160, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "3",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "20",
+              "name": "ai_reply",
+              "value": "={{ $json.content[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "21",
+              "name": "chat_id",
+              "value": "={{ $('Merge Contact').item.json.chat_id }}",
+              "type": "number"
+            },
+            {
+              "id": "22",
+              "name": "contact_id",
+              "value": "={{ $('Merge Contact').item.json.contact_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOthers": false,
+        "options": {}
+      },
+      "id": "e1f2a3b4-c5d6-7890-efab-901234567890",
+      "name": "Extract AI Reply",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2400, 300]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.ai_reply }}",
+        "additionalFields": {
+          "parse_mode": "Markdown"
+        }
+      },
+      "id": "f2a3b4c5-d6e7-8901-fabc-012345678901",
+      "name": "Send Telegram Reply",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2640, 300],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram Bot API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.hubapi.com/crm/v3/objects/notes",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ properties: { hs_note_body: '[OUTBOUND - AI Draft] ' + $('Extract AI Reply').item.json.ai_reply, hs_timestamp: String(new Date().getTime()) }, associations: [{ to: { id: $('Extract AI Reply').item.json.contact_id }, types: [{ associationCategory: 'HUBSPOT_DEFINED', associationTypeId: 202 }] }] }) }}",
+        "options": {}
+      },
+      "id": "a3b4c5d6-e7f8-9012-abcd-123456789012",
+      "name": "Log Outbound Reply",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2880, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "2",
+          "name": "HubSpot API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [{ "node": "Extract Message Data", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extract Message Data": {
+      "main": [
+        [{ "node": "Search HubSpot Contact", "type": "main", "index": 0 }]
+      ]
+    },
+    "Search HubSpot Contact": {
+      "main": [
+        [{ "node": "Contact Found?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Contact Found?": {
+      "main": [
+        [{ "node": "Get Existing Contact ID", "type": "main", "index": 0 }],
+        [{ "node": "Create HubSpot Contact", "type": "main", "index": 0 }]
+      ]
+    },
+    "Get Existing Contact ID": {
+      "main": [
+        [{ "node": "Merge Contact", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create HubSpot Contact": {
+      "main": [
+        [{ "node": "Set New Contact ID", "type": "main", "index": 0 }]
+      ]
+    },
+    "Set New Contact ID": {
+      "main": [
+        [{ "node": "Merge Contact", "type": "main", "index": 1 }]
+      ]
+    },
+    "Merge Contact": {
+      "main": [
+        [{ "node": "Log Inbound Message", "type": "main", "index": 0 }]
+      ]
+    },
+    "Log Inbound Message": {
+      "main": [
+        [{ "node": "Draft Reply with Claude", "type": "main", "index": 0 }]
+      ]
+    },
+    "Draft Reply with Claude": {
+      "main": [
+        [{ "node": "Extract AI Reply", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extract AI Reply": {
+      "main": [
+        [{ "node": "Send Telegram Reply", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Telegram Reply": {
+      "main": [
+        [{ "node": "Log Outbound Reply", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "id": "telegram-hubspot-agent-v1",
+  "meta": {
+    "templateCredsSetupCompleted": false,
+    "instanceId": "local"
+  }
+}
