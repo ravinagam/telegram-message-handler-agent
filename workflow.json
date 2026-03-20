@@ -124,9 +124,9 @@
         "resource": "message",
         "operation": "sendMessage",
         "chatId": "={{ $json.chat_id }}",
-        "text": "Praneeth Group: Hey, It's great to see you here\\! 👋\n\nThank you for choosing us\\. We understand that buying a new home is a feeling out of the world and we are extremely delighted to help you with it\\. 🏠✨\n\nFirstly, here are some quick facts about Praneeth Group\\.\n\n✅ Successfully delivered over 23\\+ projects\n\n✅ 15\\+ Million sft in construction\n\n✅ 8000\\+ Happy customers\n\n✅ A proud legacy of a decade \\& beyond\n\n✅ Most trustworthy \\& well reputed real estate developers since inception\n\n✅ At Praneeth Group, there's value for every penny you spend\n\nNow that you know why we're the best choice\\.\n\nFeel free to ask me about our available properties and I'll be happy to guide you\\!",
+        "text": "*Praneeth Group*: Hey, It's great to see you here! 👋\n\nThank you for choosing us. We understand that buying a new home is a feeling out of the world and we are extremely delighted to help you with it. 🏠✨\n\nFirstly, here are some quick facts about *Praneeth Group*:\n✅ Successfully delivered over 23+ projects\n✅ 15+ Million sft in construction\n✅ 8000+ Happy customers\n✅ A proud legacy of a decade & beyond\n✅ Most trustworthy & well reputed real estate developers since inception\n✅ At Praneeth Group, there's value for every penny you spend\n\nNow that you know why we're the best choice.\n\nFeel free to ask me about our available properties and I'll be happy to guide you!",
         "additionalFields": {
-          "parse_mode": "MarkdownV2"
+          "parse_mode": "Markdown"
         }
       },
       "id": "w1e2l3c4-o5m6-7890-welc-ome123456789",
