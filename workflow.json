@@ -70,7 +70,7 @@
             {
               "id": "8",
               "name": "synthetic_email",
-              "value": "={{ 'telegram_' + $json.message.from.id + '@noreply.telegram' }}",
+              "value": "={{ 'telegram_' + $json.message.from.id + '@noreply.com' }}",
               "type": "string"
             },
             {
@@ -309,6 +309,44 @@
     },
     {
       "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Properties",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "g1h2i3j4-k5l6-7890-mnop-qr1234567890",
+      "name": "Fetch Properties",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2160, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "4",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const properties = $input.all().map(p => p.json);\nconst msgData = $('Merge Contact').first().json;\n\nconst propertyList = properties.map((p, i) =>\n  `${i + 1}. ${p.Name} – ${p.Beds} bed, ${p.Baths} bath, $${p.Price} – ${p.Location}. Features: ${p.Features}`\n).join('\\n');\n\nconst systemPrompt = `You are a real estate assistant. You ONLY answer questions about the following available properties. If asked about anything outside these listings, politely say you can only help with available properties.\\n\\nAVAILABLE PROPERTIES:\\n${propertyList}\\n\\nAlways be friendly, professional and concise. Keep replies under 3 sentences.`;\n\nreturn [{\n  json: {\n    contact_id: msgData.contact_id,\n    chat_id: msgData.chat_id,\n    message_text: msgData.message_text,\n    system_prompt: systemPrompt\n  }\n}];"
+      },
+      "id": "h2i3j4k5-l6m7-8901-nopq-rs2345678901",
+      "name": "Build Claude Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2400, 300]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://api.anthropic.com/v1/messages",
         "authentication": "genericCredentialType",
@@ -329,14 +367,14 @@
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "application/json",
-        "body": "={{ JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1024, system: 'You are a concise, friendly customer support assistant. Draft a helpful reply to the user message in 2-3 sentences. Be warm and professional.', messages: [{ role: 'user', content: $('Merge Contact').item.json.message_text }] }) }}",
+        "body": "={{ JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1024, system: $json.system_prompt, messages: [{ role: 'user', content: $json.message_text }] }) }}",
         "options": {}
       },
       "id": "d0e1f2a3-b4c5-6789-defa-890123456789",
       "name": "Draft Reply with Claude",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2160, 300],
+      "position": [2640, 300],
       "credentials": {
         "httpHeaderAuth": {
           "id": "3",
@@ -359,13 +397,13 @@
             {
               "id": "21",
               "name": "chat_id",
-              "value": "={{ $('Merge Contact').item.json.chat_id }}",
+              "value": "={{ $('Build Claude Prompt').item.json.chat_id }}",
               "type": "number"
             },
             {
               "id": "22",
               "name": "contact_id",
-              "value": "={{ $('Merge Contact').item.json.contact_id }}",
+              "value": "={{ $('Build Claude Prompt').item.json.contact_id }}",
               "type": "string"
             }
           ]
@@ -377,7 +415,7 @@
       "name": "Extract AI Reply",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [2400, 300]
+      "position": [2880, 300]
     },
     {
       "parameters": {
@@ -393,7 +431,7 @@
       "name": "Send Telegram Reply",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [2640, 300],
+      "position": [3120, 300],
       "credentials": {
         "telegramApi": {
           "id": "1",
@@ -417,7 +455,7 @@
       "name": "Log Outbound Reply",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2880, 300],
+      "position": [3360, 300],
       "credentials": {
         "httpHeaderAuth": {
           "id": "2",
@@ -469,6 +507,16 @@
       ]
     },
     "Log Inbound Message": {
+      "main": [
+        [{ "node": "Fetch Properties", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Properties": {
+      "main": [
+        [{ "node": "Build Claude Prompt", "type": "main", "index": 0 }]
+      ]
+    },
+    "Build Claude Prompt": {
       "main": [
         [{ "node": "Draft Reply with Claude", "type": "main", "index": 0 }]
       ]
