@@ -92,6 +92,57 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "start-cond",
+              "leftValue": "={{ $json.message_text }}",
+              "rightValue": "/start",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "s1t2a3r4-t567-8901-strt-cmd123456789",
+      "name": "Is Start Command?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $json.chat_id }}",
+        "text": "Praneeth Group: Hey, It's great to see you here\\! 👋\n\nThank you for choosing us\\. We understand that buying a new home is a feeling out of the world and we are extremely delighted to help you with it\\. 🏠✨\n\nFirstly, here are some quick facts about Praneeth Group\\.\n\n✅ Successfully delivered over 23\\+ projects\n\n✅ 15\\+ Million sft in construction\n\n✅ 8000\\+ Happy customers\n\n✅ A proud legacy of a decade \\& beyond\n\n✅ Most trustworthy \\& well reputed real estate developers since inception\n\n✅ At Praneeth Group, there's value for every penny you spend\n\nNow that you know why we're the best choice\\.\n\nFeel free to ask me about our available properties and I'll be happy to guide you\\!",
+        "additionalFields": {
+          "parse_mode": "MarkdownV2"
+        }
+      },
+      "id": "w1e2l3c4-o5m6-7890-welc-ome123456789",
+      "name": "Send Welcome Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [960, 160],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "Telegram Bot API"
+        }
+      }
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://api.hubapi.com/crm/v3/objects/contacts/search",
         "authentication": "genericCredentialType",
@@ -112,7 +163,7 @@
       "name": "Search HubSpot Contact",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [720, 300],
+      "position": [960, 440],
       "credentials": {
         "httpHeaderAuth": {
           "id": "2",
@@ -472,6 +523,12 @@
     },
     "Extract Message Data": {
       "main": [
+        [{ "node": "Is Start Command?", "type": "main", "index": 0 }]
+      ]
+    },
+    "Is Start Command?": {
+      "main": [
+        [{ "node": "Send Welcome Message", "type": "main", "index": 0 }],
         [{ "node": "Search HubSpot Contact", "type": "main", "index": 0 }]
       ]
     },
